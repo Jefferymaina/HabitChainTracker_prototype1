@@ -42,12 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-supabase.auth.signUp({
+const { error } = await supabase.auth.signUp({
   email,
   password,
-  options: {
-    emailRedirectTo: "https://jefferymaina.github.io/HabitChainTracker_prototype1/#/auth",
-  },
 });
     return { error };
   };
