@@ -5,8 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 type AuthMode = 'login' | 'signup';
 
@@ -17,7 +24,12 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user, signIn, signUp } = useAuth();
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailDialogType, setEmailDialogType] = useState<'signup' | 'reset'>('signup');
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const { user, signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -61,10 +73,8 @@ export default function Auth() {
             variant: 'destructive',
           });
         } else {
-          toast({
-            title: 'Account created!',
-            description: 'Welcome to HabitChain!',
-          });
+          setEmailDialogType('signup');
+          setShowEmailDialog(true);
         }
       } else {
         const { error } = await signIn(email, password);
@@ -84,6 +94,43 @@ export default function Auth() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail) {
+      toast({
+        title: 'Email required',
+        description: 'Please enter your email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { error } = await resetPassword(forgotPasswordEmail);
+      if (error) {
+        toast({
+          title: 'Reset failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        setShowForgotPassword(false);
+        setEmailDialogType('reset');
+        setShowEmailDialog(true);
+        setForgotPasswordEmail('');
+      }
+    } catch (err) {
+      toast({
+        title: 'An error occurred',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -192,18 +239,82 @@ export default function Auth() {
             <button
               type="button"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => {
-                toast({
-                  title: 'Password reset',
-                  description: 'Please contact support to reset your password.',
-                });
-              }}
+              onClick={() => setShowForgotPassword(true)}
             >
               Forgot password?
             </button>
           </p>
         )}
       </div>
+
+      {/* Email Confirmation Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Mail className="h-8 w-8 text-primary" />
+            </div>
+            <DialogTitle className="text-center text-xl">
+              {emailDialogType === 'signup' ? 'Check your email' : 'Password reset sent'}
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {emailDialogType === 'signup' ? (
+                <>
+                  We've sent a confirmation link to <strong>{email}</strong>. 
+                  Please check your inbox and click the link to verify your account.
+                </>
+              ) : (
+                <>
+                  We've sent a password reset link to <strong>{forgotPasswordEmail || email}</strong>. 
+                  Please check your inbox and follow the instructions to reset your password.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <Button 
+              className="w-full" 
+              onClick={() => setShowEmailDialog(false)}
+            >
+              Got it
+            </Button>
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              Didn't receive the email? Check your spam folder.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset your password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="resetEmail">Email</Label>
+              <Input
+                id="resetEmail"
+                type="email"
+                value={forgotPasswordEmail}
+                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={resetLoading}>
+              {resetLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Send reset link
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
