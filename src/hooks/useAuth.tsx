@@ -74,7 +74,7 @@ const { error } = await supabase.auth.signUp({
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/#/auth`,
     });
     return { error };
   };
