@@ -28,17 +28,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Base URL of your app (no hash) – used for redirects from Supabase
+// Explicit base URL for prod (GitHub Pages) vs local build
 function getBaseUrl() {
   if (typeof window === 'undefined') return '';
 
-  // In Vite this is usually "/HabitChainTracker_prototype1/" in production
-  const basePath = import.meta.env.BASE_URL || '/';
-  const cleanBasePath = basePath.endsWith('/')
-    ? basePath.slice(0, -1)
-    : basePath;
+  const hostname = window.location.hostname;
 
-  return `${window.location.origin}${cleanBasePath}`;
+  // Your local static build URL
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8080/HabitChainTracker_prototype1';
+  }
+
+  // Production GitHub Pages URL
+  return 'https://jefferymaina.github.io/HabitChainTracker_prototype1';
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -79,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
-        // Email confirmation / magic link goes here
         emailRedirectTo: `${baseUrl}/#/auth`,
         data: name ? { full_name: name } : undefined,
       },
@@ -103,11 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async (): Promise<{ error: Error | null }> => {
     const baseUrl = getBaseUrl();
 
-    // No "#/..." here – Supabase must redirect to a clean URL
+    // MUST include /HabitChainTracker_prototype1 here
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: baseUrl,
+        redirectTo: baseUrl, // e.g. https://jefferymaina.github.io/HabitChainTracker_prototype1
       },
     });
 
@@ -126,7 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const baseUrl = getBaseUrl();
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      // Password-reset email should open your /auth page
       redirectTo: `${baseUrl}/#/auth`,
     });
 
