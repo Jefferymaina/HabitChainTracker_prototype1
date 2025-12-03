@@ -1,25 +1,3 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-
-const Index = () => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Once auth state is known and we *are* logged in,
-    // move away from the landing page to the dashboard.
-    if (!loading && user) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [user, loading, navigate]);
-
-  return (
-    // ...your existing landing page JSX here
-  );
-};
-
-export default Index;
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,12 +9,14 @@ const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
+  // If user is logged in, don't stay on landing page → go to dashboard
   useEffect(() => {
     if (!loading && user) {
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     }
   }, [user, loading, navigate]);
 
+  // While we're checking auth status, show a loader
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
